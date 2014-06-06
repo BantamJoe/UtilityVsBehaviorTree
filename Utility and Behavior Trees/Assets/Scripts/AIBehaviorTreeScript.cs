@@ -28,11 +28,13 @@ public class AIBehaviorTreeScript : MonoBehaviour
 	{
 		if(NearEnemy())
 			Fight();
+		else if(NeedHealth())
+			Heal ();
 		else
 			Wander();
 	}
 
-
+	#region Fight
 	bool NearEnemy()
 	{
 		enemyDistance = 9000;
@@ -73,8 +75,57 @@ public class AIBehaviorTreeScript : MonoBehaviour
 			enemyScript.curShootTime = enemyScript.shootTime;
 		}
 	}
+	#endregion
 
+	#region Heal
+	bool NeedHealth()
+	{
+		if(enemyScript.health < 100)
+			return true;
 
+		return false;
+	}
+
+	void Heal()
+	{
+		FaceHealPoint();
+		if(NearHealPoint())
+			Healing();
+		else
+			MoveForward();
+	}
+
+	void FaceHealPoint()
+	{
+		myTrans.LookAt(enemyScript.healSpot.transform.position);
+	}
+
+	bool NearHealPoint()
+	{
+		if(Vector3.Distance(myTrans.position, enemyScript.healSpot.transform.position) <= enemyScript.threatRange)
+			return true;
+
+		return false;
+	}
+
+	void Healing()
+	{
+		rBody.velocity = Vector3.zero;
+		enemyScript.curHealTime -= Time.deltaTime;
+
+		if(enemyScript.curHealTime <= 0.0)
+		{
+			Instantiate(enemyScript.healItem, myTrans.position + Vector3.up, enemyScript.healItem.transform.rotation);
+			enemyScript.health += enemyScript.healPerSecond;
+			enemyScript.curHealTime += 1.0f;
+			if(enemyScript.health > enemyScript.baseHealth)
+				enemyScript.health = enemyScript.baseHealth;
+		}
+	}
+
+	#endregion
+
+	#region Wander
 	bool Wander()
 	{
 		if(!enemyScript.wandering)
@@ -104,6 +155,7 @@ public class AIBehaviorTreeScript : MonoBehaviour
 		rBody.velocity = Vector3.zero;
 		rBody.AddForce(myTrans.forward * enemyScript.moveSpeed, ForceMode.VelocityChange);
 	}
+	#endregion
 
 	void OnCollisionEnter(Collision c)
 	{
